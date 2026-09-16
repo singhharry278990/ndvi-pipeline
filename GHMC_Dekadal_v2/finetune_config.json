@@ -1,0 +1,148 @@
+{
+  "task": "reconstruct NDVI at the reference dekad with all optical hidden",
+  "num_timesteps": 24,
+  "dekad_days": 10,
+  "target_slot": 23,
+  "ndvi_idx": 16,
+  "optical_cols": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    16
+  ],
+  "s2_refl_cols": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "s1_cols": [
+    0,
+    1
+  ],
+  "dw_missing_class": 9,
+  "k_aug": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "k_aug_probs": [
+    0.4,
+    0.2,
+    0.15,
+    0.1,
+    0.08,
+    0.07
+  ],
+  "w_ndvi": 1.0,
+  "w_refl": 0.3,
+  "epochs": 12,
+  "batch_size": 256,
+  "lr": 0.0003,
+  "weight_decay": 0.05,
+  "split": "tile-disjoint",
+  "val_tile_fraction": 0.25,
+  "seed": 0,
+  "best_val_rmse": 0.09017737954854965,
+  "val_metrics": {
+    "n": 79616,
+    "MAE": 0.053858865052461624,
+    "RMSE": 0.09017737954854965,
+    "R2": 0.8835466036621278,
+    "std_true": 0.26425397396087646,
+    "std_pred": 0.24889282882213593,
+    "std_ratio": 0.9418697953224182
+  },
+  "history": [
+    {
+      "epoch": 0,
+      "train_loss": 0.10300781154245,
+      "val_rmse": 0.16860514879226685,
+      "val_mae": 0.12362522631883621
+    },
+    {
+      "epoch": 1,
+      "train_loss": 0.025140608988600953,
+      "val_rmse": 0.12414681911468506,
+      "val_mae": 0.08923036605119705
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.017690823462821383,
+      "val_rmse": 0.10255876928567886,
+      "val_mae": 0.06619420647621155
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.014235233106935988,
+      "val_rmse": 0.14242364466190338,
+      "val_mae": 0.11547031253576279
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.013029124860927808,
+      "val_rmse": 0.11686863750219345,
+      "val_mae": 0.08265703916549683
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.011750552044858979,
+      "val_rmse": 0.09202541410923004,
+      "val_mae": 0.05652507394552231
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.010636106200368175,
+      "val_rmse": 0.09149987250566483,
+      "val_mae": 0.05579064041376114
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.010274131125797918,
+      "val_rmse": 0.09026143699884415,
+      "val_mae": 0.05390755459666252
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.009825338539666252,
+      "val_rmse": 0.09017747640609741,
+      "val_mae": 0.05385909229516983
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.01006452400977837,
+      "val_rmse": 0.09017744660377502,
+      "val_mae": 0.053859006613492966
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.010127818584165305,
+      "val_rmse": 0.09017741680145264,
+      "val_mae": 0.05385889485478401
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.01007405782230347,
+      "val_rmse": 0.09017737954854965,
+      "val_mae": 0.053858865052461624
+    }
+  ],
+  "month_tensor_is_2d": true,
+  "notes": "Encoder+decoder fine-tune. Months are passed as a 2-D [B, T] tensor so Presto's month_to_tensor() returns them unchanged; the int and 1-D branches would auto-increment one month per timestep, which is wrong at 10-day cadence. That branch also skips .to(device)."
+}

@@ -1,0 +1,65 @@
+# --- secrets / credentials (never commit) ---
+.env
+.env.*
+!.env.example
+*service-account*.json
+ee-earth-engine-*.json
+*-*.iam.gserviceaccount.com.json
+*credentials*.json
+token.json
+gha-creds-*.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- notebooks / IDE / OS ---
+.ipynb_checkpoints/
+.virtual_documents/
+.vscode/
+.idea/
+.cursor/
+.DS_Store
+Thumbs.db
+
+# --- model weights and array dumps ---
+*.h5
+*.pkl
+*.pt
+*.pth
+*.npy
+*.npz
+*.ckpt
+
+# --- GeoTIFF archive (GEE downloads, ~GB) ---
+downloads/
+*.tif
+*.tiff
+*.tif.aux.xml
+*.img
+*.jp2
+
+# --- resumable inference cache and mosaics ---
+cache/
+outputs/
+GHMC_Dekadal_v2/nb3_cache/
+
+# --- NASA Harvest Presto (cloned by predict_ndvi.py if missing) ---
+presto/
+
+# --- atomic-write leftovers and logs ---
+*.tmp
+*.log

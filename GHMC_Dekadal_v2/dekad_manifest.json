@@ -1,0 +1,479 @@
+{
+  "dekad_days": 10,
+  "n_dekads": 60,
+  "context_length": 24,
+  "archive_end": "2026-09-11",
+  "crs": "EPSG:32644",
+  "scale_m": 10,
+  "era5_scale_m": 1000,
+  "dekads": [
+    {
+      "index": 0,
+      "label": "2025-01-19",
+      "start": "2025-01-19",
+      "end": "2025-01-29",
+      "month_index": 0
+    },
+    {
+      "index": 1,
+      "label": "2025-01-29",
+      "start": "2025-01-29",
+      "end": "2025-02-08",
+      "month_index": 1
+    },
+    {
+      "index": 2,
+      "label": "2025-02-08",
+      "start": "2025-02-08",
+      "end": "2025-02-18",
+      "month_index": 1
+    },
+    {
+      "index": 3,
+      "label": "2025-02-18",
+      "start": "2025-02-18",
+      "end": "2025-02-28",
+      "month_index": 1
+    },
+    {
+      "index": 4,
+      "label": "2025-02-28",
+      "start": "2025-02-28",
+      "end": "2025-03-10",
+      "month_index": 2
+    },
+    {
+      "index": 5,
+      "label": "2025-03-10",
+      "start": "2025-03-10",
+      "end": "2025-03-20",
+      "month_index": 2
+    },
+    {
+      "index": 6,
+      "label": "2025-03-20",
+      "start": "2025-03-20",
+      "end": "2025-03-30",
+      "month_index": 2
+    },
+    {
+      "index": 7,
+      "label": "2025-03-30",
+      "start": "2025-03-30",
+      "end": "2025-04-09",
+      "month_index": 3
+    },
+    {
+      "index": 8,
+      "label": "2025-04-09",
+      "start": "2025-04-09",
+      "end": "2025-04-19",
+      "month_index": 3
+    },
+    {
+      "index": 9,
+      "label": "2025-04-19",
+      "start": "2025-04-19",
+      "end": "2025-04-29",
+      "month_index": 3
+    },
+    {
+      "index": 10,
+      "label": "2025-04-29",
+      "start": "2025-04-29",
+      "end": "2025-05-09",
+      "month_index": 4
+    },
+    {
+      "index": 11,
+      "label": "2025-05-09",
+      "start": "2025-05-09",
+      "end": "2025-05-19",
+      "month_index": 4
+    },
+    {
+      "index": 12,
+      "label": "2025-05-19",
+      "start": "2025-05-19",
+      "end": "2025-05-29",
+      "month_index": 4
+    },
+    {
+      "index": 13,
+      "label": "2025-05-29",
+      "start": "2025-05-29",
+      "end": "2025-06-08",
+      "month_index": 5
+    },
+    {
+      "index": 14,
+      "label": "2025-06-08",
+      "start": "2025-06-08",
+      "end": "2025-06-18",
+      "month_index": 5
+    },
+    {
+      "index": 15,
+      "label": "2025-06-18",
+      "start": "2025-06-18",
+      "end": "2025-06-28",
+      "month_index": 5
+    },
+    {
+      "index": 16,
+      "label": "2025-06-28",
+      "start": "2025-06-28",
+      "end": "2025-07-08",
+      "month_index": 6
+    },
+    {
+      "index": 17,
+      "label": "2025-07-08",
+      "start": "2025-07-08",
+      "end": "2025-07-18",
+      "month_index": 6
+    },
+    {
+      "index": 18,
+      "label": "2025-07-18",
+      "start": "2025-07-18",
+      "end": "2025-07-28",
+      "month_index": 6
+    },
+    {
+      "index": 19,
+      "label": "2025-07-28",
+      "start": "2025-07-28",
+      "end": "2025-08-07",
+      "month_index": 7
+    },
+    {
+      "index": 20,
+      "label": "2025-08-07",
+      "start": "2025-08-07",
+      "end": "2025-08-17",
+      "month_index": 7
+    },
+    {
+      "index": 21,
+      "label": "2025-08-17",
+      "start": "2025-08-17",
+      "end": "2025-08-27",
+      "month_index": 7
+    },
+    {
+      "index": 22,
+      "label": "2025-08-27",
+      "start": "2025-08-27",
+      "end": "2025-09-06",
+      "month_index": 8
+    },
+    {
+      "index": 23,
+      "label": "2025-09-06",
+      "start": "2025-09-06",
+      "end": "2025-09-16",
+      "month_index": 8
+    },
+    {
+      "index": 24,
+      "label": "2025-09-16",
+      "start": "2025-09-16",
+      "end": "2025-09-26",
+      "month_index": 8
+    },
+    {
+      "index": 25,
+      "label": "2025-09-26",
+      "start": "2025-09-26",
+      "end": "2025-10-06",
+      "month_index": 9
+    },
+    {
+      "index": 26,
+      "label": "2025-10-06",
+      "start": "2025-10-06",
+      "end": "2025-10-16",
+      "month_index": 9
+    },
+    {
+      "index": 27,
+      "label": "2025-10-16",
+      "start": "2025-10-16",
+      "end": "2025-10-26",
+      "month_index": 9
+    },
+    {
+      "index": 28,
+      "label": "2025-10-26",
+      "start": "2025-10-26",
+      "end": "2025-11-05",
+      "month_index": 9
+    },
+    {
+      "index": 29,
+      "label": "2025-11-05",
+      "start": "2025-11-05",
+      "end": "2025-11-15",
+      "month_index": 10
+    },
+    {
+      "index": 30,
+      "label": "2025-11-15",
+      "start": "2025-11-15",
+      "end": "2025-11-25",
+      "month_index": 10
+    },
+    {
+      "index": 31,
+      "label": "2025-11-25",
+      "start": "2025-11-25",
+      "end": "2025-12-05",
+      "month_index": 10
+    },
+    {
+      "index": 32,
+      "label": "2025-12-05",
+      "start": "2025-12-05",
+      "end": "2025-12-15",
+      "month_index": 11
+    },
+    {
+      "index": 33,
+      "label": "2025-12-15",
+      "start": "2025-12-15",
+      "end": "2025-12-25",
+      "month_index": 11
+    },
+    {
+      "index": 34,
+      "label": "2025-12-25",
+      "start": "2025-12-25",
+      "end": "2026-01-04",
+      "month_index": 11
+    },
+    {
+      "index": 35,
+      "label": "2026-01-04",
+      "start": "2026-01-04",
+      "end": "2026-01-14",
+      "month_index": 0
+    },
+    {
+      "index": 36,
+      "label": "2026-01-14",
+      "start": "2026-01-14",
+      "end": "2026-01-24",
+      "month_index": 0
+    },
+    {
+      "index": 37,
+      "label": "2026-01-24",
+      "start": "2026-01-24",
+      "end": "2026-02-03",
+      "month_index": 0
+    },
+    {
+      "index": 38,
+      "label": "2026-02-03",
+      "start": "2026-02-03",
+      "end": "2026-02-13",
+      "month_index": 1
+    },
+    {
+      "index": 39,
+      "label": "2026-02-13",
+      "start": "2026-02-13",
+      "end": "2026-02-23",
+      "month_index": 1
+    },
+    {
+      "index": 40,
+      "label": "2026-02-23",
+      "start": "2026-02-23",
+      "end": "2026-03-05",
+      "month_index": 1
+    },
+    {
+      "index": 41,
+      "label": "2026-03-05",
+      "start": "2026-03-05",
+      "end": "2026-03-15",
+      "month_index": 2
+    },
+    {
+      "index": 42,
+      "label": "2026-03-15",
+      "start": "2026-03-15",
+      "end": "2026-03-25",
+      "month_index": 2
+    },
+    {
+      "index": 43,
+      "label": "2026-03-25",
+      "start": "2026-03-25",
+      "end": "2026-04-04",
+      "month_index": 2
+    },
+    {
+      "index": 44,
+      "label": "2026-04-04",
+      "start": "2026-04-04",
+      "end": "2026-04-14",
+      "month_index": 3
+    },
+    {
+      "index": 45,
+      "label": "2026-04-14",
+      "start": "2026-04-14",
+      "end": "2026-04-24",
+      "month_index": 3
+    },
+    {
+      "index": 46,
+      "label": "2026-04-24",
+      "start": "2026-04-24",
+      "end": "2026-05-04",
+      "month_index": 3
+    },
+    {
+      "index": 47,
+      "label": "2026-05-04",
+      "start": "2026-05-04",
+      "end": "2026-05-14",
+      "month_index": 4
+    },
+    {
+      "index": 48,
+      "label": "2026-05-14",
+      "start": "2026-05-14",
+      "end": "2026-05-24",
+      "month_index": 4
+    },
+    {
+      "index": 49,
+      "label": "2026-05-24",
+      "start": "2026-05-24",
+      "end": "2026-06-03",
+      "month_index": 4
+    },
+    {
+      "index": 50,
+      "label": "2026-06-03",
+      "start": "2026-06-03",
+      "end": "2026-06-13",
+      "month_index": 5
+    },
+    {
+      "index": 51,
+      "label": "2026-06-13",
+      "start": "2026-06-13",
+      "end": "2026-06-23",
+      "month_index": 5
+    },
+    {
+      "index": 52,
+      "label": "2026-06-23",
+      "start": "2026-06-23",
+      "end": "2026-07-03",
+      "month_index": 5
+    },
+    {
+      "index": 53,
+      "label": "2026-07-03",
+      "start": "2026-07-03",
+      "end": "2026-07-13",
+      "month_index": 6
+    },
+    {
+      "index": 54,
+      "label": "2026-07-13",
+      "start": "2026-07-13",
+      "end": "2026-07-23",
+      "month_index": 6
+    },
+    {
+      "index": 55,
+      "label": "2026-07-23",
+      "start": "2026-07-23",
+      "end": "2026-08-02",
+      "month_index": 6
+    },
+    {
+      "index": 56,
+      "label": "2026-08-02",
+      "start": "2026-08-02",
+      "end": "2026-08-12",
+      "month_index": 7
+    },
+    {
+      "index": 57,
+      "label": "2026-08-12",
+      "start": "2026-08-12",
+      "end": "2026-08-22",
+      "month_index": 7
+    },
+    {
+      "index": 58,
+      "label": "2026-08-22",
+      "start": "2026-08-22",
+      "end": "2026-09-01",
+      "month_index": 7
+    },
+    {
+      "index": 59,
+      "label": "2026-09-01",
+      "start": "2026-09-01",
+      "end": "2026-09-11",
+      "month_index": 8
+    }
+  ],
+  "s2_bands": [
+    "B2",
+    "B3",
+    "B4",
+    "B5",
+    "B6",
+    "B7",
+    "B8",
+    "B8A",
+    "B11",
+    "B12"
+  ],
+  "s1_bands": [
+    "VV",
+    "VH"
+  ],
+  "s2obs_bands": [
+    "n_obs",
+    "age_days"
+  ],
+  "s1obs_bands": [
+    "n_obs"
+  ],
+  "era5_bands": [
+    "temperature_2m",
+    "total_precipitation_monthly_equiv"
+  ],
+  "srtm_bands": [
+    "elevation",
+    "slope"
+  ],
+  "nodata_i16": -32768,
+  "s2_scale": 10000.0,
+  "s1_scale": 100.0,
+  "slope_scale": 100.0,
+  "dw_missing_class": 9,
+  "no_obs_age": 255,
+  "cs_threshold": 0.6,
+  "scl_bad_classes": [
+    1,
+    3,
+    8,
+    9,
+    10,
+    11
+  ],
+  "precip_note": "total_precipitation_sum is SUMMED over the dekad then rescaled by 30.44/DEKAD_DAYS to a monthly equivalent, so it lands in the same range Presto's ERA5 normalisation (divide by 0.03 m) was built for.",
+  "validity_rule": "A pixel's S2 observation in dekad d is valid iff S2OBS n_obs > 0. Reflectance at invalid pixels is the sentinel nodata_i16. No NaN-or-zero heuristic is required or permitted downstream."
+}
