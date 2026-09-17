@@ -449,6 +449,12 @@ def main():
     )
     parser.add_argument("--batch-size", type=int, default=4096)
     parser.add_argument("--rows-per-chunk", type=int, default=50)
+    parser.add_argument(
+        "--delete-cache",
+        action="store_true",
+        default=False,
+        help="If set, delete obsolete aoi_chunks_* cache folders. Default: keep them.",
+    )
     args = parser.parse_args()
 
     device = _select_device(args.device)
@@ -490,17 +496,20 @@ def main():
     WINDOW = DEKADS[REFERENCE_DEKAD - T + 1: REFERENCE_DEKAD + 1]
     REF_LABEL = DEKADS[REFERENCE_DEKAD]["label"]
 
-    print("Checking cache directory for stale chunks...")
     active_cache_folder = f"aoi_chunks_{REF_LABEL}"
-    for entry in os.listdir(CACHE_DIR):
-        entry_path = os.path.join(CACHE_DIR, entry)
-        if os.path.isdir(entry_path) and entry.startswith("aoi_chunks_"):
-            if entry != active_cache_folder:
-                try:
-                    shutil.rmtree(entry_path)
-                    print(f"Pruned obsolete cache folder: {entry}")
-                except Exception as e:
-                    print(f"Warning: Could not remove {entry}: {e}")
+    if args.delete_cache:
+        print("Checking cache directory for stale chunks...")
+        for entry in os.listdir(CACHE_DIR):
+            entry_path = os.path.join(CACHE_DIR, entry)
+            if os.path.isdir(entry_path) and entry.startswith("aoi_chunks_"):
+                if entry != active_cache_folder:
+                    try:
+                        shutil.rmtree(entry_path)
+                        print(f"Pruned obsolete cache folder: {entry}")
+                    except Exception as e:
+                        print(f"Warning: Could not remove {entry}: {e}")
+    else:
+        print("Keeping existing cache folders (--delete-cache not set).")
 
     CHUNKS_DIR = os.path.join(CACHE_DIR, active_cache_folder)
     os.makedirs(CHUNKS_DIR, exist_ok=True)

@@ -1,10 +1,14 @@
+import argparse
 import json
 import os
 import re
+import struct
 import time
 from collections import defaultdict
 from datetime import date, timedelta
 import ee
+import rasterio
+from osgeo import gdal
 
 # ------------------------------------------------------------------ SETUP
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -38,6 +42,22 @@ def _load_dotenv(path):
 
 _env_path = os.path.join(_SCRIPT_DIR, ".env")
 _load_dotenv(_env_path)
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--delete-cache",
+    action="store_true",
+    default=False,
+    help="If set, delete expired dekad GeoTIFFs outside the current window. Default: keep them.",
+)
+parser.add_argument(
+    "--archive-end",
+    type=date.fromisoformat,
+    default=None,
+    metavar="YYYY-MM-DD",
+    help="End date of the last (target) dekad. Pins the 24-dekad window ending on this date.",
+)
+args = parser.parse_args()
 
 # Service-account JSON path and project come from .env
 # (EE_PROJECT, GOOGLE_APPLICATION_CREDENTIALS). User OAuth cannot bill
@@ -78,7 +98,9 @@ ADVANCE_ARCHIVE = True
 
 _manifest_path = f'{DOWNLOADS_DIR}/dekad_manifest.json'
 
-if os.path.exists(_manifest_path):
+if args.archive_end:
+    ARCHIVE_END = args.archive_end
+elif os.path.exists(_manifest_path):
     with open(_manifest_path) as f:
         _prev = json.load(f)
     _prev_end = date.fromisoformat(_prev['archive_end'])
@@ -154,6 +176,15 @@ manifest = {
 with open(f"{DOWNLOADS_DIR}/dekad_manifest.json", "w") as f:
     json.dump(manifest, f, indent=2)
 
+print(
+    f"Archive window: {dekads[0]['start']} .. {dekads[-1]['end']} "
+    f"({N_DEKADS} dekads)"
+)
+print(
+    f"Target (predicted) dekad: {dekads[-1]['start']} .. {dekads[-1]['end']} "
+    f"(label {dekads[-1]['label']})"
+)
+
 # ------------------------------------------------------------------------------
 # PRUNING LOGIC (ROLLING WINDOW)
 # ------------------------------------------------------------------------------
@@ -185,8 +216,11 @@ def prune_expired_dekads(folder_path, active_dekads):
     if deleted > 0:
         print(f"Pruned {deleted} expired files. Freed ~{freed / 1e6:.1f} MB.")
 
-print("\n--- CHECKING FOR EXPIRED DEKADS ---")
-prune_expired_dekads(DOWNLOADS_DIR, dekads)
+if args.delete_cache:
+    print("\n--- CHECKING FOR EXPIRED DEKADS ---")
+    prune_expired_dekads(DOWNLOADS_DIR, dekads)
+else:
+    print("\nKeeping existing dekad files (--delete-cache not set).")
 
 # ------------------------------------------------------------------------------
 # CELL 4: Composite builders
@@ -258,10 +292,307 @@ def build_srtm():
     return (ee.Image.cat([elevation, slope]).unmask(NODATA_I16).round().toInt16().clip(aoi_geom))
 
 # ------------------------------------------------------------------------------
+# GeoTIFF integrity (skip only files that pass)
+# ------------------------------------------------------------------------------
+gdal.UseExceptions()
+
+_TIF_SPECS = {
+    "S2":    {"count": 10, "dtype": "int16", "grid": "10m"},
+    "S2OBS": {"count": 2,  "dtype": "uint8", "grid": "10m"},
+    "S1":    {"count": 2,  "dtype": "int16", "grid": "10m"},
+    "S1OBS": {"count": 1,  "dtype": "uint8", "grid": "10m"},
+    "DW":    {"count": 1,  "dtype": "uint8", "grid": "10m"},
+    "ERA5":  {"count": 2,  "dtype": "float32", "grid": "era5"},
+    "SRTM":  {"count": 2,  "dtype": "int16", "grid": "10m"},
+}
+_VALID_CACHE_PATH = os.path.join(DOWNLOADS_DIR, ".tif_validated.json")
+_10M_REF = {"width": None, "height": None}
+
+
+def _product_kind(name):
+    if name.startswith("SRTM"):
+        return "SRTM"
+    for kind in ("S2OBS", "S1OBS", "ERA5", "S2", "S1", "DW"):
+        if name == kind or name.startswith(kind + "_"):
+            return kind
+    return None
+
+
+def _load_valid_cache():
+    if not os.path.isfile(_VALID_CACHE_PATH):
+        return {}
+    try:
+        with open(_VALID_CACHE_PATH) as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _save_valid_cache(cache):
+    with open(_VALID_CACHE_PATH, "w") as f:
+        json.dump(cache, f, indent=2)
+
+
+def _cache_fingerprint(path, width=None, height=None):
+    st = os.stat(path)
+    rec = {"mtime_ns": st.st_mtime_ns, "size": st.st_size, "ok": True}
+    if width is not None:
+        rec["width"] = width
+        rec["height"] = height
+    return rec
+
+
+def _tiff_byte_ranges_ok(path):
+    """Every IFD tile/strip must sit inside the file. Catches aborted COG writes."""
+    fsize = os.path.getsize(path)
+    with open(path, "rb") as f:
+        header = f.read(16)
+        if len(header) < 8:
+            return False, "truncated TIFF header"
+        if header[:2] == b"II":
+            endian = "<"
+        elif header[:2] == b"MM":
+            endian = ">"
+        else:
+            return False, "not a TIFF"
+        magic = struct.unpack(endian + "H", header[2:4])[0]
+        if magic == 42:
+            big = False
+            ifd = struct.unpack(endian + "I", header[4:8])[0]
+        elif magic == 43:
+            big = True
+            if len(header) < 16:
+                return False, "truncated BigTIFF header"
+            ifd = struct.unpack(endian + "Q", header[8:16])[0]
+        else:
+            return False, f"bad TIFF magic {magic}"
+
+        visited = set()
+        n_ifd = 0
+        while ifd:
+            if ifd in visited or ifd >= fsize:
+                return False, "invalid IFD offset"
+            visited.add(ifd)
+            f.seek(ifd)
+            if big:
+                raw_n = f.read(8)
+                if len(raw_n) < 8:
+                    return False, "truncated IFD"
+                ntags = struct.unpack(endian + "Q", raw_n)[0]
+                tag_len, inline, nfmt, off_fmt = 20, 8, endian + "Q", endian + "Q"
+            else:
+                raw_n = f.read(2)
+                if len(raw_n) < 2:
+                    return False, "truncated IFD"
+                ntags = struct.unpack(endian + "H", raw_n)[0]
+                tag_len, inline, nfmt, off_fmt = 12, 4, endian + "H", endian + "I"
+            tags = {}
+            for _ in range(ntags):
+                rec = f.read(tag_len)
+                if len(rec) < tag_len:
+                    return False, "truncated IFD tag"
+                if big:
+                    tag, typ, count = struct.unpack(endian + "HHQ", rec[:12])
+                    val = rec[12:20]
+                else:
+                    tag, typ, count = struct.unpack(endian + "HHI", rec[:8])
+                    val = rec[8:12]
+                tags[tag] = (typ, count, val)
+            next_raw = f.read(8 if big else 4)
+            if len(next_raw) < (8 if big else 4):
+                return False, "truncated next-IFD pointer"
+            ifd = struct.unpack(endian + ("Q" if big else "I"), next_raw)[0]
+            n_ifd += 1
+
+            def load_uvals(tag_id):
+                if tag_id not in tags:
+                    return None
+                typ, count, val = tags[tag_id]
+                unit = {3: 2, 4: 4, 16: 8}.get(typ)
+                if unit is None:
+                    return "badtype"
+                nbytes = count * unit
+                if nbytes <= inline:
+                    data = val[:nbytes]
+                else:
+                    ptr = struct.unpack(off_fmt, val)[0]
+                    if ptr + nbytes > fsize:
+                        return "overflow"
+                    f.seek(ptr)
+                    data = f.read(nbytes)
+                    if len(data) < nbytes:
+                        return "overflow"
+                fmt = {2: "H", 4: "I", 8: "Q"}[unit]
+                return struct.unpack(endian + fmt * count, data)
+
+            offs = load_uvals(324)
+            if offs is None:
+                offs = load_uvals(273)
+            cnts = load_uvals(325)
+            if cnts is None:
+                cnts = load_uvals(279)
+            if offs in ("overflow", "badtype") or cnts in ("overflow", "badtype"):
+                return False, "tile offset table extends past EOF"
+            if offs is None:
+                continue
+            if cnts is None or len(offs) != len(cnts):
+                return False, "tile offset/count mismatch"
+            empty = 0
+            for o, n in zip(offs, cnts):
+                if n == 0 or o == 0:
+                    empty += 1
+                    continue
+                if o + n > fsize:
+                    return False, "tile data extends past EOF"
+            if empty:
+                return False, f"{empty}/{len(offs)} empty tiles"
+        if n_ifd < 1:
+            return False, "no IFDs"
+    return True, None
+
+
+def _gdal_checksum_all(path):
+    ds = gdal.Open(path, gdal.GA_ReadOnly)
+    if ds is None:
+        return False, "GDAL could not open file"
+    try:
+        if ds.RasterCount < 1:
+            return False, "no raster bands"
+        for i in range(1, ds.RasterCount + 1):
+            band = ds.GetRasterBand(i)
+            band.Checksum()
+            for j in range(band.GetOverviewCount()):
+                band.GetOverview(j).Checksum()
+    finally:
+        ds = None
+    return True, None
+
+
+def _validate_geotiff(path, name, cache):
+    if not os.path.isfile(path) or os.path.getsize(path) < 512:
+        return False, "file missing or too small"
+    kind = _product_kind(name)
+    if kind is None:
+        return False, f"unrecognized product name {name}"
+    spec = _TIF_SPECS[kind]
+
+    fp = _cache_fingerprint(path)
+    rec = cache.get(os.path.basename(path))
+    if rec and rec.get("ok") and rec.get("mtime_ns") == fp["mtime_ns"] and rec.get("size") == fp["size"]:
+        if spec["grid"] == "10m" and rec.get("width") and _10M_REF["width"] is None:
+            _10M_REF["width"], _10M_REF["height"] = rec["width"], rec["height"]
+        elif spec["grid"] == "10m" and _10M_REF["width"] is not None and rec.get("width"):
+            if (rec["width"], rec["height"]) != (_10M_REF["width"], _10M_REF["height"]):
+                return False, (
+                    f"grid {rec['width']}x{rec['height']} != "
+                    f"{_10M_REF['width']}x{_10M_REF['height']}"
+                )
+        return True, None
+
+    ok, reason = _tiff_byte_ranges_ok(path)
+    if not ok:
+        return False, reason
+
+    try:
+        with rasterio.open(path) as src:
+            if src.count != spec["count"]:
+                return False, f"bands {src.count} != {spec['count']}"
+            dtypes = set(src.dtypes)
+            if dtypes != {spec["dtype"]}:
+                return False, f"dtype {sorted(dtypes)} != {spec['dtype']}"
+            if src.crs is None or src.crs.to_epsg() != 32644:
+                return False, f"crs {src.crs} != {EXPORT_CRS}"
+            src_width, src_height = src.width, src.height
+            if spec["grid"] == "10m":
+                if src.width < 1000 or src.height < 1000:
+                    return False, f"10m grid too small ({src.width}x{src.height})"
+                if _10M_REF["width"] is None:
+                    _10M_REF["width"], _10M_REF["height"] = src.width, src.height
+                elif (src.width, src.height) != (_10M_REF["width"], _10M_REF["height"]):
+                    return False, (
+                        f"grid {src.width}x{src.height} != "
+                        f"{_10M_REF['width']}x{_10M_REF['height']}"
+                    )
+                if (
+                    src.is_tiled
+                    and src.block_shapes
+                    and src.block_shapes[0] == (512, 512)
+                    and not src.overviews(1)
+                ):
+                    return False, "missing COG overviews (truncated download)"
+            elif spec["grid"] == "era5":
+                if src.width < 2 or src.height < 2 or src.width > 200 or src.height > 200:
+                    return False, f"unexpected ERA5 size {src.width}x{src.height}"
+    except Exception as e:
+        return False, f"rasterio open/read failed: {e}"
+
+    ok, reason = _gdal_checksum_all(path)
+    if not ok:
+        return False, reason
+
+    cache[os.path.basename(path)] = _cache_fingerprint(
+        path,
+        width=src_width if spec["grid"] == "10m" else None,
+        height=src_height if spec["grid"] == "10m" else None,
+    )
+    return True, None
+
+
+def _delete_corrupt(path, name, reason):
+    print(f"  [CORRUPT] {name}: {reason} — deleting")
+    try:
+        os.remove(path)
+    except OSError as e:
+        print(f"    could not delete {name}: {e}")
+
+
+# ------------------------------------------------------------------------------
 # CELL 5: Direct Local Download
 # ------------------------------------------------------------------------------
-local_names = {os.path.splitext(f)[0] for f in os.listdir(DOWNLOADS_DIR) if f.endswith(".tif")}
-done_names = local_names.copy()
+_valid_cache = _load_valid_cache()
+done_names = set()
+
+print("\n--- VALIDATING LOCAL GEOTIFFS ---")
+window_names = {"SRTM_Static"}
+for d in dekads:
+    lbl = d["label"]
+    window_names.update([
+        f"S2_{lbl}", f"S2OBS_{lbl}", f"S1_{lbl}",
+        f"S1OBS_{lbl}", f"DW_{lbl}", f"ERA5_{lbl}",
+    ])
+
+srtm_path = os.path.join(DOWNLOADS_DIR, "SRTM_Static.tif")
+if os.path.isfile(srtm_path):
+    ok, reason = _validate_geotiff(srtm_path, "SRTM_Static", _valid_cache)
+    if ok:
+        done_names.add("SRTM_Static")
+    else:
+        _delete_corrupt(srtm_path, "SRTM_Static", reason)
+        _valid_cache.pop("SRTM_Static.tif", None)
+
+n_corrupt = 0
+for name in sorted(window_names):
+    if name == "SRTM_Static":
+        continue
+    fname = f"{name}.tif"
+    path = os.path.join(DOWNLOADS_DIR, fname)
+    if not os.path.isfile(path):
+        continue
+    ok, reason = _validate_geotiff(path, name, _valid_cache)
+    if ok:
+        done_names.add(name)
+    else:
+        n_corrupt += 1
+        _delete_corrupt(path, name, reason)
+        _valid_cache.pop(fname, None)
+
+_save_valid_cache(_valid_cache)
+if n_corrupt:
+    print(f"Removed {n_corrupt} corrupt/incomplete file(s). They will be re-downloaded.")
+else:
+    print("Existing window GeoTIFFs passed integrity checks.")
+
 
 def needs_export(name): return name not in done_names
 def already_have(name): return name in done_names
@@ -284,6 +615,10 @@ def download_local(image, name, scale=10):
                 image=image, filename=dest, region=aoi_geom,
                 crs=EXPORT_CRS, scale=scale, overwrite=True,
             )
+            ok, reason = _validate_geotiff(dest, name, _valid_cache)
+            if not ok:
+                raise RuntimeError(f"failed integrity check: {reason}")
+            _save_valid_cache(_valid_cache)
             done_names.add(name)
             downloaded.append(name)
             return True
@@ -291,6 +626,7 @@ def download_local(image, name, scale=10):
             if os.path.isfile(dest):
                 try: os.remove(dest)
                 except OSError: pass
+            _valid_cache.pop(os.path.basename(dest), None)
             if attempt == 2:
                 print(f"  FAILED to download {name} after 3 attempts: {e}")
                 failed_downloads.append((name, str(e)))
